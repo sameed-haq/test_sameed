@@ -1,0 +1,32 @@
+pipeline:
+  name: Test_Remote
+  identifier: Test_Remote
+  projectIdentifier: sameedtest
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: S1
+        identifier: S1
+        description: ""
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: ShellScript
+                  name: ShellScript_1
+                  identifier: ShellScript_1
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |-
+                          echo <+account.companyName>
+                          echo <+account.name>
+                    environmentVariables: []
+                    outputVariables: []
+                  timeout: 10m
+        tags: {}
