@@ -6,27 +6,11 @@ pipeline:
   tags: {}
   stages:
     - stage:
-        name: S1
-        identifier: S1
+        name: ss
+        identifier: ss
         description: ""
-        type: Custom
+        type: Pipeline
         spec:
-          execution:
-            steps:
-              - step:
-                  type: ShellScript
-                  name: ShellScript_1
-                  identifier: ShellScript_1
-                  spec:
-                    shell: Bash
-                    executionTarget: {}
-                    source:
-                      type: Inline
-                      spec:
-                        script: |
-                          echo <+account.name>
-                          exit 0
-                    environmentVariables: []
-                    outputVariables: []
-                  timeout: 10m
-        tags: {}
+          org: Ng_Pipelines_K8s_Organisations
+          pipeline: Test_Pipeline_1
+          project: OPA_TEST
