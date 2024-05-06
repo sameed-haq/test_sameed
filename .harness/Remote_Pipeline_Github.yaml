@@ -6,11 +6,28 @@ pipeline:
   tags: {}
   stages:
     - stage:
-        name: ss
-        identifier: ss
+        name: s1
+        identifier: s1
         description: ""
-        type: Pipeline
+        type: Approval
         spec:
-          org: Ng_Pipelines_K8s_Organisations
-          pipeline: Test_Pipeline_1
-          project: OPA_TEST
+          execution:
+            steps:
+              - step:
+                  name: s1
+                  identifier: s1
+                  type: HarnessApproval
+                  timeout: 1d
+                  spec:
+                    approvalMessage: |-
+                      Please review the following information
+                      and approve the pipeline progression
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+                        - _project_all_users
+                    isAutoRejectEnabled: false
+                    approverInputs: []
+        tags: {}
