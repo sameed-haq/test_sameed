@@ -1,0 +1,11 @@
+inputSet:
+  name: test
+  identifier: test
+  orgIdentifier: Ng_Pipelines_K8s_Organisations
+  projectIdentifier: OPA_TEST
+  pipeline:
+    identifier: Remote_Pipeline_Github
+    variables:
+      - name: sec
+        type: String
+        value: Sameed_Test_GitHub
