@@ -1,7 +1,7 @@
 resource "harness_platform_policy" "test" {
        description    = "test1123"
-       identifier     = "test1123"
-       name           = "test1123"
+       identifier     = "a12aa22"
+       name           = "a12aa22"
        rego           = <<-EOT
             package pipeline
             
