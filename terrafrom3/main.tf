@@ -33,8 +33,8 @@ variable "harness_platform_api_key" {
 
 resource "harness_platform_policy" "test" {
        description    = "test1123"
-       identifier     = "a2111testing"
-       name           = "a2111testing"
+       identifier     = "afffing"
+       name           = "afffing"
        rego           = <<-EOT
             package pipeline#testingg
             
