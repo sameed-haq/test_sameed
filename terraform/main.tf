@@ -15,10 +15,10 @@ provider "harness" {
 
 resource "harness_platform_policy" "test" {
        description    = "test1123"
-       identifier     = "a111testing"
-       name           = "a111testing"
+       identifier     = "a2111testing"
+       name           = "a2111testing"
        rego           = <<-EOT
-            package pipeline
+            package pipeline#testingg
             
             # Deny pipelines that don't have an approval step
             # NOTE: Try removing the HarnessApproval step from your input to see the policy fail
