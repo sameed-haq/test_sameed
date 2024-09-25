@@ -7,6 +7,30 @@ terraform {
   }
 }
 
+provider "harness" {
+  endpoint         = var.harness_endpoint
+  account_id       = var.harness_account_id
+  platform_api_key = var.harness_platform_api_key
+}
+
+variable "harness_endpoint" {
+  description = "The Harness API endpoint"
+  type        = string
+  sensitive   = false  
+}
+
+variable "harness_account_id" {
+  description = "Harness account ID"
+  type        = string
+  sensitive   = false 
+}
+
+variable "harness_platform_api_key" {
+  description = "Harness API key"
+  type        = string
+  sensitive   = true 
+}
+
 resource "harness_platform_policy" "test" {
        description    = "test1123"
        identifier     = "a2111testing"
