@@ -11,8 +11,8 @@ terraform {
 
 resource "harness_platform_policy" "test" {
        description    = "test1123"
-       identifier     = "afffing"
-       name           = "afffing"
+       identifier     = "afffing2"
+       name           = "afffing2"
        rego           = <<-EOT
             package pipeline#testingg
             
