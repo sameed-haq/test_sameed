@@ -7,6 +7,9 @@ terraform {
   }
 }
 
+provider "harness" {
+  endpoint = "https://qa.harness.io/gateway"
+}
 
 resource "harness_platform_policy" "test" {
        description    = "test1123"
