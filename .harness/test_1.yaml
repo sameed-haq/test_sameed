@@ -181,5 +181,5 @@ template:
           prCloneStrategy: SourceBranch
     delegateSelectors:
       - cd-cie
-  identifier: OPASanityLoader
+  identifier: test
   versionLabel: SMP
