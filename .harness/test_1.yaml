@@ -1,8 +1,8 @@
 template:
   name: OPASanityLoader
   type: Pipeline
-  projectIdentifier: Pipelines
-  orgIdentifier: OPA
+  projectIdentifier: Testim1
+  orgIdentifier: Ng_Pipelines_K8s_Organisations
   spec:
     allowStageExecutions: true
     stages:
