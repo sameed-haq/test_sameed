@@ -1,5 +1,5 @@
 template:
-  name: OPASanityLoader
+  name: test
   type: Pipeline
   projectIdentifier: Testim1
   orgIdentifier: Ng_Pipelines_K8s_Organisations
