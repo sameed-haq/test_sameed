@@ -1,0 +1,6 @@
+pipeline:
+  name: TestingRemote
+  identifier: TestingRemote
+  projectIdentifier: TestingGetYaml
+  orgIdentifier: default
+  tags: {}
