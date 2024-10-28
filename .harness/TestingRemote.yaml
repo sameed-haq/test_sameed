@@ -24,7 +24,7 @@ pipeline:
                       type: Inline
                       spec:
                         script: |-
-                          echo "Rem Rem Rem"
+                          echo "RemNon RemNon RemNon"
                           exit 0
                     environmentVariables: []
                     outputVariables: []
