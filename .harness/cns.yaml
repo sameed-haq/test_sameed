@@ -1,5 +1,5 @@
 pipeline:
-  name: cns-cd-gold-appp-preprod
+  name: cnsssss-cd-gold-appp-preprod
   identifier: cns_cd_gold_appp_preprod
   projectIdentifier: OPA_TEST
   orgIdentifier: Ng_Pipelines_K8s_Organisations
