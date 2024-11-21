@@ -23,7 +23,9 @@ pipeline:
                     source:
                       type: Inline
                       spec:
-                        script: exit 0
+                        script: |-
+                          echo S1
+                          exit 0
                     environmentVariables: []
                     outputVariables: []
                   timeout: 10m
