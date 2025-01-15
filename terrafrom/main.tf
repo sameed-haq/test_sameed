@@ -9,12 +9,12 @@ variable "delegate_selectors" {
 }
 
 variable "oci_helm_credentials" {
-  description = "OCI Helm credentials (optional)"
-  type = object({
-    username     = string
-    password_ref = string
-  })
-  default = null
+  type        = map(string)
+  description = "OCI Helm credentials (if using username/password authentication)"
+  default = {
+    "username"     = "gfdsa"
+    "password_ref" = "account.buildfarm_cloud_provider_access_key"
+  }
 }
 
 resource "harness_platform_connector_oci_helm" "oci_helm_connector" {
