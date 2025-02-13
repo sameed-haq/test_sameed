@@ -29,11 +29,4 @@ jobs:
 
     - name: Trigger Harness
       run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{
-            "artifact": {
-              "image": "my-app:latest",
-              "build_number": "${{ github.run_id }}"
-            }
-          }' \
-          https://app.harness.io/gateway/ng/api/webhook?accountIdentifier=jGS2jB1ZSZG2RiLHVR0gew
+          curl -X POST -H 'content-type: application/json' --url 'https://app.harness.io/gateway/pipeline/api/webhook/custom/nb0WWZeNQcSLUkM3hYKOXg/v3?accountIdentifier=jGS2jB1ZSZG2RiLHVR0gew&orgIdentifier=default&projectIdentifier=Sameed_Test&pipelineIdentifier=approval_test_brother&triggerIdentifier=ffff' -d '{"sample_key": "sample_value"}'
