@@ -1,0 +1,2 @@
+x= "trigger"
+print(x)
