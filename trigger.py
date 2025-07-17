@@ -1,2 +1,2 @@
-x= "trigger"
+x= "trigger-1"
 print(x)
