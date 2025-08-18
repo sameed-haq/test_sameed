@@ -1,5 +1,7 @@
-parent:
-  child:
-    HN_cert: -----BEGIN CERTIFICATE-----
-            MIICfakefakefake
-            -----END CERTIFICATE-----
+apiVersion: v1
+kind: Secret
+metadata: { name: my-cert }
+type: Opaque
+stringData:
+  HN_cert: |-
+    <+secrets.getValue("testsecret")>
