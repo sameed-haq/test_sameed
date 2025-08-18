@@ -1,4 +1,2 @@
 # values.yaml (bad)
-HN_cert: -----BEGIN CERTIFICATE-----
-MIICfakefakefake
------END CERTIFICATE-----
+HN_cert: -<+<+secrets.getValue("project.testCertPem")>>
