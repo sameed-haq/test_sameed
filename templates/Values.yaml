@@ -1,2 +1,2 @@
 # values.yaml (bad)
-HN_cert: -<+secrets.getValue("testsecret")>
+HN_cert: -<+stage.variables.testvar>
