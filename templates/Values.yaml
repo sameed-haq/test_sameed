@@ -1,2 +1,2 @@
 # values.yaml (bad)
-HN_cert: -<+stage.variables.testvar>
+HN_cert: <+stage.variables.testvar>
