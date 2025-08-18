@@ -1,4 +1,4 @@
-parent:
-  child:
-        HN_cert:
-        <+secrets.getValue("project.testCertPem")>   # ❌ will throw “Expected a 'block end'… @[      HN_cert]”
+# values.yaml (bad)
+HN_cert: -----BEGIN CERTIFICATE-----
+MIICfakefakefake
+-----END CERTIFICATE-----
