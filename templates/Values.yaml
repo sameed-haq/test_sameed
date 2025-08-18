@@ -1,5 +1,5 @@
 parent:
   child:
     HN_cert: -----BEGIN CERTIFICATE-----
-MIICfakefakefake
------END CERTIFICATE-----
+            MIICfakefakefake
+            -----END CERTIFICATE-----
