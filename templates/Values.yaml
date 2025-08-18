@@ -1,2 +1,5 @@
-# values.yaml (bad)
-HN_cert: <+stage.variables.testvar>
+parent:
+  child:
+    HN_cert: -----BEGIN CERTIFICATE-----
+MIICfakefakefake
+-----END CERTIFICATE-----
