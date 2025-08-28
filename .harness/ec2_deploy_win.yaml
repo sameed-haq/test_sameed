@@ -1,0 +1,151 @@
+pipeline:
+  name: ec2_deploy_win
+  identifier: ec2_deploy_win
+  projectIdentifier: Sameed_Test
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: ec2_win
+        identifier: ec2_win
+        description: ""
+        type: Deployment
+        spec:
+          deploymentType: WinRm
+          service:
+            serviceRef: win_ec2
+            serviceInputs:
+              serviceDefinition:
+                type: WinRm
+                spec:
+                  artifacts:
+                    primary:
+                      primaryArtifactRef: <+input>
+                      sources: <+input>
+          environment:
+            environmentRef: ec2_win
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: ec2_2_try
+          execution:
+            steps:
+              - step:
+                  type: Command
+                  name: Command_1
+                  identifier: Command_1
+                  spec:
+                    onDelegate: false
+                    environmentVariables: []
+                    outputVariables: []
+                    commandUnits:
+                      - identifier: Deploy_to_IIS
+                        name: Deploy to IIS
+                        type: Script
+                        spec:
+                          shell: PowerShell
+                          source:
+                            type: Inline
+                            spec:
+                              script: |
+                                # Define IIS App Settings
+                                $siteName = "MyAspNetApp"
+                                $physicalPath = "C:\inetpub\wwwroot\myapi"
+                                $port = 8080
+                                $appPoolName = "MyAppPool"
+
+                                Write-Host "=== Stopping and Removing Any Existing Websites on Port $port ==="
+                                # Get all IIS websites bound to port 8080
+                                $sites = Get-WebBinding | Where-Object { $_.bindingInformation -match ":$port" }
+
+                                foreach ($site in $sites) {
+                                    $siteNameToRemove = ($site.ItemXPath -split "\[")[1] -split "\]")[0]
+                                    Write-Host "Stopping and removing site: $siteNameToRemove on port $port"
+
+                                    # Stop and remove the website
+                                    Stop-Website -Name $siteNameToRemove
+                                    Remove-Website -Name $siteNameToRemove
+                                }
+
+                                Write-Host "=== IIS Websites on Port $port Removed ==="
+
+                                Write-Host "=== Ensuring IIS is Installed ==="
+                                Install-WindowsFeature -Name Web-Server -IncludeManagementTools
+
+                                Write-Host "=== Ensuring .NET Core Hosting Bundle is Installed ==="
+                                # Download and install .NET Core Hosting Bundle if not installed
+                                $hostingBundleUrl = "https://download.visualstudio.microsoft.com/download/pr/2df3c7c7-29c6-4857-b25b-59b38328ad16/2e5b75877fdc59ac86d2a981d9cb0e5f/dotnet-hosting-7.0.11-win.exe"
+                                $hostingBundlePath = "C:\dotnet-hosting.exe"
+                                if (-not (Test-Path "C:\Program Files\dotnet")) {
+                                    Invoke-WebRequest -Uri $hostingBundleUrl -OutFile $hostingBundlePath
+                                    Start-Process -FilePath $hostingBundlePath -ArgumentList "/quiet" -Wait
+                                    Remove-Item -Path $hostingBundlePath -Force
+                                }
+
+                                Write-Host "=== Creating and Configuring Application Pool ==="
+                                # Create Application Pool if it doesn't exist
+                                if (-not (Test-Path IIS:\AppPools\$appPoolName)) {
+                                    New-WebAppPool -Name $appPoolName
+                                    Set-ItemProperty IIS:\AppPools\$appPoolName -Name managedRuntimeVersion -Value ""
+                                    Set-ItemProperty IIS:\AppPools\$appPoolName -Name processModel.identityType -Value "ApplicationPoolIdentity"
+                                }
+
+                                Write-Host "=== Creating IIS Website on Port $port ==="
+                                # Create IIS site if it doesn't exist
+                                if (-not (Test-Path IIS:\Sites\$siteName)) {
+                                    New-Website -Name $siteName -Port $port -PhysicalPath $physicalPath -ApplicationPool $appPoolName
+                                } else {
+                                    # If the site exists, update its physical path and rebind it
+                                    Set-ItemProperty "IIS:\Sites\$siteName" -Name physicalPath -Value $physicalPath
+                                    Remove-WebBinding -Name $siteName -Protocol http -Port $port -ErrorAction SilentlyContinue
+                                    New-WebBinding -Name $siteName -Protocol http -Port $port -IPAddress "*"
+                                }
+
+                                Write-Host "=== Restarting IIS ==="
+                                Restart-Service W3SVC
+
+                                Write-Host "=== Deployment Successful! Application is Running at http://<ec2-public-ip>:$port ==="
+                        shell: PowerShell
+                  timeout: 10m
+                  strategy:
+                    repeat:
+                      items:
+                        - 3.7.221.191
+            rollbackSteps:
+              - step:
+                  name: Rollback
+                  identifier: Rollback
+                  timeout: 10m
+                  strategy:
+                    repeat:
+                      items: <+stage.output.hosts>
+                  template:
+                    templateRef: account.Default_IIS_Application_PowerShell
+                    templateInputs:
+                      type: Command
+                      spec:
+                        environmentVariables:
+                          - name: ReleaseNo
+                            type: String
+                            value: "0.1"
+                          - name: AppPoolName
+                            type: String
+                            value: DefaultAppPool
+                          - name: AppPoolDotNetVersion
+                            type: String
+                            value: v4.0
+                          - name: DownloadDirectory
+                            type: String
+                            value: $env:TEMP
+                          - name: AppPhysicalDirectory
+                            type: String
+                            value: $env:SYSTEMDRIVE
+                          - name: DestinationDirectory
+                            type: String
+                            value: "%USERPROFILE%\\<+service.name>\\<+env.name>"
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
