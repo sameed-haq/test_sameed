@@ -27,6 +27,11 @@ pipeline:
             deployToAll: false
             infrastructureDefinitions:
               - identifier: ec2_2_try
+                inputs:
+                  identifier: ec2_2_try
+                  type: Pdc
+                  spec:
+                    hosts: <+input>
           execution:
             steps:
               - step:
@@ -127,15 +132,6 @@ pipeline:
                           - name: ReleaseNo
                             type: String
                             value: "0.1"
-                          - name: AppPoolName
-                            type: String
-                            value: DefaultAppPool
-                          - name: AppPoolDotNetVersion
-                            type: String
-                            value: v4.0
-                          - name: DownloadDirectory
-                            type: String
-                            value: $env:TEMP
                           - name: AppPhysicalDirectory
                             type: String
                             value: $env:SYSTEMDRIVE
