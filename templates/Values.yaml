@@ -1,0 +1,3 @@
+# values.yaml (BAD - do NOT use)
+HN_cert:
+  <+secrets.getValue("testsecret")>

@@ -1,0 +1,32 @@
+pipeline:
+  name: TestingRemote
+  identifier: TestingRemote
+  projectIdentifier: TestingGetYaml
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: testtt
+        identifier: testtt
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: ShellScript
+                  name: ShellScript_1
+                  identifier: ShellScript_1
+                  spec:
+                    shell: Bash
+                    executionTarget: {}
+                    source:
+                      type: Inline
+                      spec:
+                        script: |-
+                          echo "Rem Rem Rem"
+                          exit 0
+                    environmentVariables: []
+                    outputVariables: []
+                  timeout: 10m
+        tags: {}
