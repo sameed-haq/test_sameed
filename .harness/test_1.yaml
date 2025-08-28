@@ -1,0 +1,185 @@
+template:
+  name: test
+  type: Pipeline
+  projectIdentifier: Testim1
+  orgIdentifier: Ng_Pipelines_K8s_Organisations
+  spec:
+    allowStageExecutions: true
+    stages:
+      - stage:
+          name: Credentials
+          identifier: Credentials
+          description: ""
+          type: Custom
+          spec:
+            execution:
+              steps:
+                - step:
+                    type: ShellScript
+                    name: Credential
+                    identifier: Credential
+                    spec:
+                      shell: Bash
+                      source:
+                        type: Inline
+                        spec:
+                          script: |-
+
+                            # Enable debugging mode
+                            set -x
+                            # Update and install necessary packages
+                            microdnf update
+                            microdnf install jq
+
+                            # Variables
+                            namespace="<+pipeline.variables.devspace>"
+
+                            if [[ "$namespace" == *smp* ]]; then
+
+                                if [[ "$namespace" == "smpnginx" || "$namespace" == "smpistio" || "$namespace" == "smpselfsign" || "$namespace" == "smpairgap" ]]; then
+                                    environment_url="https://$namespace.pr2.harness.io" #smpnginx.pr2.harness.io
+
+                                    # auth="YWRtaW5fcGxAaGFybmVzc2lvcHJpdmF0ZS50ZXN0aW5hdG9yLmNvbTpwYXNzd29yZA=="  # base64 for account:password
+                                    auth="YWRtaW5AaGFybmVzcy5pbzpIYXJuZXNzQDEyMw=="
+                                    response=$(curl -s -X POST "$environment_url/api/users/login" -H "Content-Type: application/json" -d "{\"authorization\":\"Basic $auth\"}")
+                                    account_id=$(echo "$response" | jq -r '.resource.defaultAccountId')
+                                    token=$(echo "$response" | jq -r '.resource.token')
+                                else
+                               
+                                    environment_url="https://$namespace.test.harness.io" #http://smp-airgap.test.harness.io/
+
+                                    auth="dGVzdEBoYXJuZXNzLmlvOnBhc3N3b3Jk"  # base64 for account:password
+                                    username = "test@harness.io"
+                                    password = "password"
+
+
+                                    response=$(curl -s -X POST "$environment_url/api/users/login" -H "Content-Type: application/json" -d "{\"authorization\":\"Basic $auth\"}")
+                                    account_id=$(echo "$response" | jq -r '.resource.defaultAccountId')
+                                    token=$(echo "$response" | jq -r '.resource.token')
+                                fi
+                            elif [[ "$namespace" == "qa0" ]]; then
+                                
+                                environment_url="https://$namespace.1.harness-qa.io" #http://qa0.1.harness-qa.io/
+                                auth="cmFnaHVAaGFybmVzcy5pbzp5RiNMdkg1JXV0Wnk5VQ=="  # base64 for account:password
+                                echo "in qa0" $auth
+                                username = "raghu@harness.io"
+                                password = "yF#LvH5%utZy9U"
+
+                                response=$(curl -s -X POST "$environment_url/api/users/login" -H "Content-Type: application/json" -d "{\"authorization\":\"Basic $auth\"}")
+                                account_id=$(echo "$response" | jq -r '.resource.defaultAccountId')
+                                token=$(echo "$response" | jq -r '.resource.token')
+
+                            else
+
+                                environment_url="https://$namespace.pr2.harness.io" #imrank.pr2.harness.io
+
+                                auth="YWRtaW5AaGFybmVzcy5pbzpIYXJuZXNzQDEyMw=="  # base64 for account:password
+
+                                response=$(curl -s -X POST "$environment_url/api/users/login" -H "Content-Type: application/json" -d "{\"authorization\":\"Basic $auth\"}")
+                                account_id=$(echo "$response" | jq -r '.resource.defaultAccountId')
+                                token=$(echo "$response" | jq -r '.resource.token')
+
+                            fi
+
+
+                            if [ -z "$account_id" ] || [ -z "$token" ]; then
+                                echo "============================================================================================="
+                                echo "Login failed. Please check if the environment is up and running or if login credentials are correct."
+                                echo "Login response:"
+                                echo "$response"
+                                echo "============================================================================================="
+                                exit 1
+                            else
+                                echo "============================================================================================="
+                                echo "Login success for user $namespace"
+                                echo "============================================================================================="
+                            fi
+
+                            echo "$account_id"
+                            echo "$token"
+                      environmentVariables: []
+                      outputVariables:
+                        - name: account_id
+                          type: String
+                          value: account_id
+                        - name: token
+                          type: String
+                          value: token
+                        - name: auth
+                          type: String
+                          value: auth
+                        - name: environment_url
+                          type: String
+                          value: environment_url
+                      executionTarget: {}
+                    timeout: 10m
+          tags: {}
+      - stage:
+          name: SanityLoader
+          identifier: SanityLoader
+          description: ""
+          type: CI
+          spec:
+            cloneCodebase: true
+            infrastructure:
+              type: KubernetesDirect
+              spec:
+                connectorRef: account.harnessciplatformng
+                namespace: harness-delegate-ng
+                automountServiceAccountToken: true
+                nodeSelector: {}
+                os: Linux
+            execution:
+              steps:
+                - step:
+                    type: Run
+                    name: Run
+                    identifier: Run
+                    spec:
+                      connectorRef: account.gcpplatform
+                      image: us.gcr.io/platform-205701/test-executor:latest
+                      shell: Bash
+                      command: |
+                        # Common parameters
+                        base_uri=<+pipeline.stages.Credentials.spec.execution.steps.Credential.output.outputVariables.environment_url>
+                        account_id=<+pipeline.stages.Credentials.spec.execution.steps.Credential.output.outputVariables.account_id>
+                        username="admin@harness.io"
+                        password="61b48ab4c522cac45dda0ab20af71f58"
+
+
+                        mvn -ntp clean test -pl CDNG -am -Denv.type=DYNAMIC_SMP -Dproject=DYNAMIC -DBASE_URI=$base_uri -DACCOUNT_ID=$account_id -DUSERNAME=$username -DPASSWORD=$password -DexecutionSuiteFiles="suitefiles/cdngOpaSanityLoader.xml" -DskipCDNGTest=false
+                      resources:
+                        limits:
+                          memory: 4000Mi
+                          cpu: "2"
+            slsa_provenance:
+              enabled: false
+    variables:
+      - name: devspace
+        type: String
+        description: ""
+        required: true
+        value: <+input>
+    notificationRules:
+      - name: Nightwatch
+        identifier: Nightwatch
+        pipelineEvents:
+          - type: PipelineFailed
+        notificationMethod:
+          type: Email
+          spec:
+            userGroups: []
+            recipients:
+              - opa-qa-executions-aaaahysd35e2g4hot7yscbn4za@harness.slack.com
+        enabled: false
+    properties:
+      ci:
+        codebase:
+          connectorRef: account.wingssoftware
+          repoName: Automation.git
+          build: <+input>
+          prCloneStrategy: SourceBranch
+    delegateSelectors:
+      - cd-cie
+  identifier: test
+  versionLabel: SMP

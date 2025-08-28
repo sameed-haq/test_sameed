@@ -1,0 +1,4 @@
+parent:
+  child:
+        HN_cert:
+        <+secrets.getValue("project.testCertPem")>   # ❌ will trigger: Expected a 'block end'… @[      HN_cert]

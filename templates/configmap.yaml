@@ -1,0 +1,9 @@
+# manifests/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-cert
+data:
+  # Declare a block scalar in the manifest and indent the value from .Values
+  HN_cert: |-
+{{ .Values.HN_cert | nindent 4 }}
