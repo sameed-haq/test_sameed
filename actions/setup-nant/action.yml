@@ -1,0 +1,68 @@
+name: setup-nant
+description: "Install NAnt and add it to PATH"
+author: "you"
+inputs:
+  nant-version:
+    description: "NAnt version (windows: choco version; linux: package version or 'latest')"
+    required: false
+    default: "latest"
+runs:
+  using: "composite"
+  steps:
+    - name: Install NAnt on Windows
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        $ErrorActionPreference = 'Stop'
+        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        }
+        if ('${{ inputs.nant-version }}' -eq 'latest') {
+          choco install -y nant
+        } else {
+          choco install -y nant --version ${{ inputs.nant-version }}
+        }
+        # Ensure on PATH (Chocolatey puts it under C:\ProgramData\chocolatey\bin)
+        echo "C:\ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        nant -help
+
+    - name: Install NAnt on Linux
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update -y
+        # Ubuntu runners have mono; install nant package
+        # If the package is missing on the image, fallback to binary install
+        if apt-cache show nant >/dev/null 2>&1; then
+          sudo apt-get install -y nant
+        else
+          # Fallback: download NAnt binary and use with mono
+          NANT_VERSION="${{ inputs.nant-version }}"
+          if [ "$NANT_VERSION" = "latest" ]; then
+            NANT_VERSION="0.92"   # stable classic release
+          fi
+          curl -L -o /tmp/nant.zip "https://downloads.sourceforge.net/project/nant/nant/$NANT_VERSION/nant-$NANT_VERSION-bin.zip"
+          sudo mkdir -p /opt/nant
+          sudo unzip -q /tmp/nant.zip -d /opt/nant
+          sudo ln -sf /opt/nant/nant-$NANT_VERSION/bin/nant /usr/local/bin/nant
+          # shim so 'nant' calls mono with nant.exe when needed
+          cat <<'EOF' | sudo tee /usr/local/bin/nant >/dev/null
+#!/usr/bin/env bash
+set -e
+if command -v mono >/dev/null 2>&1; then
+  exec mono /opt/nant/nant-*/bin/NAnt.exe "$@"
+else
+  echo "mono is required for NAnt on Linux" >&2
+  exit 1
+fi
+EOF
+          sudo chmod +x /usr/local/bin/nant
+        fi
+        nant -help
+
+    - name: Print NAnt version
+      shell: bash
+      run: nant -version || true
