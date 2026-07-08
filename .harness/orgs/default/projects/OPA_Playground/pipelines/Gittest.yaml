@@ -1,0 +1,30 @@
+pipeline:
+  name: Gittest
+  identifier: Gittest
+  projectIdentifier: OPA_Playground
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: Test
+        identifier: Test
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: ShellScript
+                  name: ShellScript_1
+                  identifier: ShellScript_1
+                  spec:
+                    shell: Bash
+                    executionTarget: {}
+                    source:
+                      type: Inline
+                      spec:
+                        script: echo "GitTesting"
+                    environmentVariables: []
+                    outputVariables: []
+                  timeout: 10m
+        tags: {}
