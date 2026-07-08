@@ -1,0 +1,708 @@
+pipeline:
+  name: GitOps - Multi Service - Multi Env - Argo Rollouts
+  identifier: GitOps_Multi_Service_Multi_Env_Argo_Rollouts
+  projectIdentifier: OPA_Playground
+  orgIdentifier: default
+  tags:
+    owner: cassie
+    Primary: ""
+  stages:
+    - stage:
+        identifier: Create_Deployment_Ticket
+        type: Custom
+        name: Create Deployment Ticket
+        description: ""
+        spec:
+          execution:
+            steps:
+              - step:
+                  identifier: Create_Deployment_Ticket
+                  type: JiraCreate
+                  name: Create Deployment Ticket
+                  timeout: 5m
+                  spec:
+                    connectorRef: <+input>
+                    projectKey: <+input>
+                    issueType: <+input>
+                    fields:
+                      - name: Description
+                        value: |-
+                          Track deployment promotion to Production
+                          Pipeline Name: <+pipeline.name>
+                          Deployment URL: <+pipeline.executionUrl>
+                      - name: Summary
+                        value: Track GitOps Deployment
+        tags: {}
+    - stage:
+        identifier: Dev_Deploy
+        name: Dev Deploy
+        tags: {}
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          gitOpsEnabled: true
+          execution:
+            steps:
+              - stepGroup:
+                  identifier: Update_Release_Repo
+                  name: Update Release Repo
+                  steps:
+                    - step:
+                        identifier: Open_PR
+                        type: GitOpsUpdateReleaseRepo
+                        name: Open PR
+                        timeout: 10m
+                        spec:
+                          variables:
+                            - name: replicaCount
+                              type: String
+                              value: <+pipeline.variables.replicas>
+                          prTitle: Update Replica Count and Image Tag for <+service.name> in <+env.name>
+                          allowEmptyCommit: true
+                    - step:
+                        identifier: Merge_Changes
+                        type: MergePR
+                        name: Merge Changes
+                        spec:
+                          deleteSourceBranch: true
+                          variables: []
+                        timeout: 10m
+              - step:
+                  identifier: Fetch_Linked_Apps
+                  type: GitOpsFetchLinkedApps
+                  name: Fetch Linked Apps
+                  spec:
+                    filterByServiceEnvCluster: true
+                  timeout: 10m
+                  when:
+                    stageStatus: Success
+                    condition: "false"
+              - step:
+                  identifier: GitOps_Sync
+                  type: GitOpsSync
+                  name: Sync Apps
+                  spec:
+                    prune: false
+                    dryRun: false
+                    applyOnly: false
+                    forceApply: false
+                    retryStrategy: {}
+                    retry: false
+                    syncOptions:
+                      skipSchemaValidation: false
+                      autoCreateNamespace: false
+                      pruneResourcesAtLast: false
+                      applyOutOfSyncOnly: false
+                      replaceResources: false
+                      prunePropagationPolicy: foreground
+                      respectIgnoreDifferences: false
+                      serverSideApply: false
+                    autoPromoteRolloutBehavior: promote-full
+                    waitTillHealthy: true
+                    showResourceProgress: true
+                    applicationRegex: <+<+env.name>.toLowerCase() + "-" + <+service.name>>
+                  timeout: 10m
+              - step:
+                  identifier: Deploy_Complete
+                  type: JiraUpdate
+                  name: Deploy Complete
+                  spec:
+                    connectorRef: account.Harness_JIRA
+                    issueKey: <+pipeline.stages.Create_Deployment_Ticket.spec.execution.steps.Create_Deployment_Ticket.issue.key>
+                    fields:
+                      - name: Comment
+                        value: <+env.name> deployment complete for <+service.name>
+                    issueType: Story
+                    projectKey: HD
+                  timeout: 10m
+            rollbackSteps: []
+          environment:
+            environmentRef: <+input>
+            deployToAll: <+input>
+            environmentInputs: <+input>
+            gitOpsClusters: <+input>
+          services:
+            values: <+input>
+            metadata:
+              parallel: true
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+        when:
+          pipelineStatus: Success
+    - stage:
+        identifier: QA_Deploy
+        name: QA Deploy
+        tags: {}
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          gitOpsEnabled: true
+          execution:
+            steps:
+              - stepGroup:
+                  identifier: Update_Release_Repo
+                  name: Update Release Repo
+                  steps:
+                    - step:
+                        identifier: Open_PR
+                        type: GitOpsUpdateReleaseRepo
+                        name: Open PR
+                        timeout: 10m
+                        spec:
+                          variables:
+                            - name: replicaCount
+                              type: String
+                              value: <+pipeline.variables.replicas>
+                          prTitle: Update Replica Count and Image Tag for <+service.name> in <+env.name>
+                          allowEmptyCommit: true
+                    - step:
+                        identifier: Merge_Changes
+                        type: MergePR
+                        name: Merge Changes
+                        spec:
+                          deleteSourceBranch: true
+                          variables: []
+                        timeout: 10m
+              - step:
+                  identifier: Fetch_Linked_Apps
+                  type: GitOpsFetchLinkedApps
+                  name: Fetch Linked Apps
+                  spec:
+                    filterByServiceEnvCluster: true
+                  timeout: 10m
+                  when:
+                    stageStatus: Success
+                    condition: "false"
+              - step:
+                  identifier: GitOps_Sync
+                  type: GitOpsSync
+                  name: Sync Apps
+                  spec:
+                    prune: false
+                    dryRun: false
+                    applyOnly: false
+                    forceApply: false
+                    retryStrategy: {}
+                    retry: false
+                    syncOptions:
+                      skipSchemaValidation: false
+                      autoCreateNamespace: false
+                      pruneResourcesAtLast: false
+                      applyOutOfSyncOnly: false
+                      replaceResources: false
+                      prunePropagationPolicy: foreground
+                      respectIgnoreDifferences: false
+                      serverSideApply: false
+                    autoPromoteRolloutBehavior: promote-full
+                    waitTillHealthy: true
+                    showResourceProgress: true
+                    applicationRegex: <+<+env.name>.toLowerCase() + "-" + <+service.name>>
+                  timeout: 10m
+              - step:
+                  identifier: Deploy_Complete
+                  type: JiraUpdate
+                  name: Deploy Complete
+                  spec:
+                    connectorRef: account.Harness_JIRA
+                    issueKey: <+pipeline.stages.Create_Deployment_Ticket.spec.execution.steps.Create_Deployment_Ticket.issue.key>
+                    fields:
+                      - name: Comment
+                        value: <+env.name> deployment complete for <+service.name>
+                    issueType: Story
+                    projectKey: HD
+                  timeout: 10m
+            rollbackSteps: []
+          environment:
+            environmentRef: <+input>
+            deployToAll: <+input>
+            environmentInputs: <+input>
+            gitOpsClusters: <+input>
+          service:
+            serviceRef: <+input>
+            serviceInputs: <+input>
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+        when:
+          pipelineStatus: Success
+    - stage:
+        identifier: Preprod_Deploy
+        name: Pre Prod Deploy
+        tags: {}
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          gitOpsEnabled: true
+          execution:
+            steps:
+              - stepGroup:
+                  identifier: Update_Release_Repo
+                  name: Update Release Repo
+                  steps:
+                    - step:
+                        identifier: Open_PR
+                        type: GitOpsUpdateReleaseRepo
+                        name: Open PR
+                        timeout: 10m
+                        spec:
+                          variables:
+                            - name: replicaCount
+                              type: String
+                              value: <+pipeline.variables.replicas>
+                          prTitle: Update Replica Count and Image Tag for <+service.name> in <+env.name>
+                          allowEmptyCommit: true
+                    - step:
+                        identifier: Merge_Changes
+                        type: MergePR
+                        name: Merge Changes
+                        spec:
+                          deleteSourceBranch: true
+                          variables: []
+                        timeout: 10m
+              - step:
+                  identifier: Fetch_Linked_Apps
+                  type: GitOpsFetchLinkedApps
+                  name: Fetch Linked Apps
+                  spec:
+                    filterByServiceEnvCluster: true
+                  timeout: 10m
+                  when:
+                    stageStatus: Success
+                    condition: "false"
+              - step:
+                  identifier: GitOps_Sync
+                  type: GitOpsSync
+                  name: Sync Apps
+                  spec:
+                    prune: false
+                    dryRun: false
+                    applyOnly: false
+                    forceApply: false
+                    retryStrategy: {}
+                    retry: false
+                    syncOptions:
+                      skipSchemaValidation: false
+                      autoCreateNamespace: false
+                      pruneResourcesAtLast: false
+                      applyOutOfSyncOnly: false
+                      replaceResources: false
+                      prunePropagationPolicy: foreground
+                      respectIgnoreDifferences: false
+                      serverSideApply: false
+                    autoPromoteRolloutBehavior: promote-full
+                    waitTillHealthy: true
+                    showResourceProgress: true
+                    applicationRegex: <+<+env.name>.toLowerCase() + "-" + <+service.name>>
+                  timeout: 10m
+              - step:
+                  identifier: Deploy_Complete
+                  type: JiraUpdate
+                  name: Deploy Complete
+                  spec:
+                    connectorRef: <+input>
+                    issueKey: <+pipeline.stages.Create_Deployment_Ticket.spec.execution.steps.Create_Deployment_Ticket.issue.key>
+                    fields:
+                      - name: Comment
+                        value: <+env.name> deployment complete for <+service.name>
+                    issueType: Story
+                    projectKey: HD
+                  timeout: 10m
+            rollbackSteps: []
+          environment:
+            environmentRef: <+input>
+            deployToAll: <+input>
+            environmentInputs: <+input>
+            gitOpsClusters: <+input>
+          service:
+            serviceRef: <+input>
+            serviceInputs: <+input>
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+        when:
+          pipelineStatus: Success
+    - stage:
+        identifier: Approve_Prod_NA_Deploy
+        type: Approval
+        name: Prod Approval Gate
+        description: ""
+        spec:
+          execution:
+            steps:
+              - step:
+                  identifier: Jira_Approval
+                  type: JiraApproval
+                  name: Jira Approval
+                  spec:
+                    connectorRef: account.Harness_JIRA
+                    retryInterval: 1m
+                    issueKey: <+pipeline.stages.Create_Deployment_Ticket.spec.execution.steps.Create_Deployment_Ticket.issue.key>
+                    approvalCriteria:
+                      type: KeyValues
+                      spec:
+                        matchAnyCondition: true
+                        conditions:
+                          - key: Status
+                            operator: equals
+                            value: Approved
+                    rejectionCriteria:
+                      type: KeyValues
+                      spec:
+                        matchAnyCondition: true
+                        conditions:
+                          - key: Status
+                            operator: equals
+                            value: Rejected
+                    projectKey: HD
+                  timeout: 1d
+                  when:
+                    stageStatus: Success
+        tags: {}
+        when:
+          pipelineStatus: Success
+    - stage:
+        identifier: Prod_NA_Deploy
+        type: Deployment
+        name: Prod Deploy
+        description: ""
+        spec:
+          deploymentType: Kubernetes
+          gitOpsEnabled: true
+          execution:
+            steps:
+              - stepGroup:
+                  identifier: Update_Release_Repo
+                  name: Update Release Repo
+                  steps:
+                    - step:
+                        identifier: Open_PR
+                        type: GitOpsUpdateReleaseRepo
+                        name: Open PR
+                        spec:
+                          variables:
+                            - name: replicaCount
+                              type: String
+                              value: <+pipeline.variables.replicas>
+                          allowEmptyCommit: true
+                          prTitle: Update Replica Count and Image Tag for <+service.name> in <+env.name>
+                        timeout: 10m
+                    - step:
+                        identifier: PR_Approval
+                        type: HarnessApproval
+                        name: PR Approval
+                        spec:
+                          approvalMessage: Please review the final changes before deploying to Prod North America
+                          includePipelineExecutionHistory: true
+                          isAutoRejectEnabled: false
+                          approvers:
+                            userGroups:
+                              - account._account_all_users
+                            minimumCount: 1
+                            disallowPipelineExecutor: false
+                          approverInputs: []
+                        timeout: 1d
+                    - step:
+                        identifier: Merge_PR
+                        type: MergePR
+                        name: Approve Git Changes
+                        spec:
+                          deleteSourceBranch: true
+                          variables: []
+                        timeout: 10m
+              - step:
+                  identifier: Fetch_Linked_Apps
+                  type: GitOpsFetchLinkedApps
+                  name: Fetch Linked Apps
+                  spec:
+                    filterByServiceEnvCluster: true
+                  timeout: 10m
+                  when:
+                    stageStatus: Success
+                    condition: "false"
+              - parallel:
+                  - step:
+                      identifier: Sync_Apps
+                      type: GitOpsSync
+                      name: Sync Apps
+                      spec:
+                        prune: false
+                        dryRun: false
+                        applyOnly: false
+                        forceApply: false
+                        retryStrategy: {}
+                        retry: false
+                        syncOptions:
+                          skipSchemaValidation: false
+                          autoCreateNamespace: false
+                          pruneResourcesAtLast: false
+                          applyOutOfSyncOnly: false
+                          replaceResources: false
+                          prunePropagationPolicy: foreground
+                          respectIgnoreDifferences: false
+                          serverSideApply: false
+                        applicationRegex: <+<+env.name>.toLowerCase() + "-" + <+service.name>>
+                      timeout: 10m
+                  - step:
+                      identifier: Prod_Deploy_Begins
+                      type: JiraUpdate
+                      name: Prod Deploy Begins
+                      spec:
+                        connectorRef: account.Harness_JIRA
+                        issueKey: <+pipeline.stages.Create_Deployment_Ticket.spec.execution.steps.Create_Deployment_Ticket.issue.key>
+                        fields:
+                          - name: Comment
+                            value: Prod deploy to <+env.name> has begun
+                        issueType: Story
+                        projectKey: HD
+                      timeout: 10m
+                      when:
+                        stageStatus: Success
+              - stepGroup:
+                  identifier: Rollout_Deployment
+                  name: Rollout Deployment
+                  steps:
+                    - step:
+                        identifier: ArgoRollout_Canary_25
+                        type: GitOpsRollout
+                        name: ArgoRollout Canary 25
+                        spec:
+                          agentIdentifier: org.orggitopsdemoagent
+                          namespace: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].namespace>
+                          appName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].appName>
+                          rolloutName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].rolloutName>
+                          waitUntilHealthStatus:
+                            healthStatus: Suspended
+                        timeout: 10m
+                    - parallel:
+                        - step:
+                            identifier: Verify_25
+                            type: Verify
+                            name: Verify - 25 Percent
+                            spec:
+                              type: Canary
+                              isMultiServicesOrEnvs: false
+                              monitoredService:
+                                type: Template
+                                spec:
+                                  monitoredServiceTemplateRef: GitOps_MS_Template
+                                  versionLabel: v1
+                                  templateInputs:
+                                    type: Application
+                                    serviceRef: <+service.name>
+                                    environmentRef: <+env.name>
+                              spec:
+                                sensitivity: HIGH
+                                duration: 5m
+                            timeout: 2h
+                            failureStrategies:
+                              - onFailure:
+                                  errors:
+                                    - Verification
+                                  action:
+                                    type: ManualIntervention
+                                    spec:
+                                      timeout: 2h
+                                      onTimeout:
+                                        action:
+                                          type: StageRollback
+                              - onFailure:
+                                  errors:
+                                    - Unknown
+                                  action:
+                                    type: ManualIntervention
+                                    spec:
+                                      timeout: 2h
+                                      onTimeout:
+                                        action:
+                                          type: Ignore
+                        - step:
+                            identifier: Wait_until_Suspended
+                            type: GitOpsRollout
+                            name: Wait
+                            spec:
+                              agentIdentifier: org.orggitopsdemoagent
+                              namespace: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].namespace>
+                              appName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].appName>
+                              rolloutName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].rolloutName>
+                              waitUntilHealthStatus:
+                                healthStatus: Suspended
+                                healthMessage: CanaryPauseStep
+                            timeout: 10m
+                    - step:
+                        identifier: Resume_Rollout
+                        type: GitOpsRollout
+                        name: ArgoRollout Canary 50
+                        spec:
+                          agentIdentifier: org.orggitopsdemoagent
+                          namespace: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].namespace>
+                          appName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].appName>
+                          rolloutName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].rolloutName>
+                        timeout: 10m
+                    - parallel:
+                        - step:
+                            identifier: Verify_50
+                            type: Verify
+                            name: Verify - 50 Percent
+                            spec:
+                              type: Canary
+                              isMultiServicesOrEnvs: false
+                              monitoredService:
+                                type: Template
+                                spec:
+                                  monitoredServiceTemplateRef: GitOps_MS_Template
+                                  versionLabel: v1
+                                  templateInputs:
+                                    type: Application
+                                    serviceRef: <+service.name>
+                                    environmentRef: <+env.name>
+                              spec:
+                                sensitivity: HIGH
+                                duration: 5m
+                            timeout: 2h
+                            failureStrategies:
+                              - onFailure:
+                                  errors:
+                                    - Verification
+                                  action:
+                                    type: ManualIntervention
+                                    spec:
+                                      timeout: 2h
+                                      onTimeout:
+                                        action:
+                                          type: StageRollback
+                              - onFailure:
+                                  errors:
+                                    - Unknown
+                                  action:
+                                    type: ManualIntervention
+                                    spec:
+                                      timeout: 2h
+                                      onTimeout:
+                                        action:
+                                          type: Ignore
+                        - step:
+                            identifier: Wait_until_Suspended_2
+                            type: GitOpsRollout
+                            name: Wait
+                            spec:
+                              agentIdentifier: org.orggitopsdemoagent
+                              namespace: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].namespace>
+                              appName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].appName>
+                              rolloutName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].rolloutName>
+                              waitUntilHealthStatus:
+                                healthStatus: Suspended
+                                healthMessage: CanaryPauseStep
+                            timeout: 10m
+                    - step:
+                        identifier: ArgoRollout_Canary_75
+                        type: GitOpsRollout
+                        name: ArgoRollout Canary 75
+                        spec:
+                          agentIdentifier: org.orggitopsdemoagent
+                          namespace: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].namespace>
+                          appName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].appName>
+                          rolloutName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].rolloutName>
+                        timeout: 10m
+                    - step:
+                        identifier: Verify_75
+                        type: Verify
+                        name: Verify - 75 Percent
+                        spec:
+                          type: Canary
+                          isMultiServicesOrEnvs: false
+                          monitoredService:
+                            type: Template
+                            spec:
+                              monitoredServiceTemplateRef: GitOps_MS_Template
+                              versionLabel: v1
+                              templateInputs:
+                                type: Application
+                                serviceRef: <+service.name>
+                                environmentRef: <+env.name>
+                          spec:
+                            sensitivity: HIGH
+                            duration: 5m
+                        timeout: 2h
+                        failureStrategies:
+                          - onFailure:
+                              errors:
+                                - Verification
+                              action:
+                                type: ManualIntervention
+                                spec:
+                                  timeout: 2h
+                                  onTimeout:
+                                    action:
+                                      type: StageRollback
+                          - onFailure:
+                              errors:
+                                - Unknown
+                              action:
+                                type: ManualIntervention
+                                spec:
+                                  timeout: 2h
+                                  onTimeout:
+                                    action:
+                                      type: Ignore
+                    - step:
+                        identifier: ArgoRollout_Canary_100
+                        type: GitOpsRollout
+                        name: ArgoRollout Canary 100
+                        spec:
+                          agentIdentifier: org.orggitopsdemoagent
+                          namespace: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].namespace>
+                          appName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].appName>
+                          rolloutName: <+pipeline.stages.Prod_NA_Deploy_0.spec.execution.steps.Sync_Apps.gitops.discoveredRollouts[0].rolloutName>
+                        timeout: 10m
+              - step:
+                  identifier: Prod_Deploy_Complete
+                  type: JiraUpdate
+                  name: Prod Deploy Complete
+                  spec:
+                    connectorRef: account.Harness_JIRA
+                    issueKey: <+pipeline.stages.Create_Deployment_Ticket.spec.execution.steps.Create_Deployment_Ticket.issue.key>
+                    fields:
+                      - name: Comment
+                        value: Prod deploy to <+env.name> has completed!
+                    issueType: Story
+                    projectKey: HD
+                  timeout: 10m
+                  when:
+                    stageStatus: Success
+            rollbackSteps: []
+          environmentGroup:
+            envGroupRef: <+input>
+            metadata:
+              parallel: true
+              forkStagesForGitOpsMultiEnv: true
+            deployToAll: <+input>
+            environments: <+input>
+          services:
+            values: <+input>
+            metadata:
+              parallel: true
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+        gitOpsEnabled: true
+  allowStageExecutions: true
+  variables:
+    - name: replicas
+      type: Number
+      description: ""
+      required: true
+      value: 3
