@@ -1,8 +1,8 @@
 pipeline:
   name: GitOps - Multi Service - Multi Env - Argo Rollouts
   identifier: GitOps_Multi_Service_Multi_Env_Argo_Rollouts
-  projectIdentifier: Kyriba_Test
-  orgIdentifier: Kyriba_Test
+  projectIdentifier: OPA_Playground
+  orgIdentifier: default
   tags:
     owner: cassie
     Primary: ""
