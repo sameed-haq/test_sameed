@@ -1,6 +1,6 @@
 pipeline:
-  nae: GitOps - Multi Service - Multi Env - Argo Rollouts
-  identifier: GitOps_Multi_Service_Multi_Env_Argo_Rollouts
+  nae: GiGitgalat
+  identifier: Gitgalat
   projectIdentifier: OPA_Playground
   orgIdentifier: default
   tags:
