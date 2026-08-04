@@ -1,0 +1,27 @@
+template:
+  name: build test
+  type: Stage
+  spec:
+    type: CI
+    spec:
+      cloneCodebase: true
+      caching:
+        enabled: true
+        override: false
+      platform:
+        os: Linux
+        arch: Amd64
+      runtime:
+        type: Cloud
+        spec: {}
+      execution:
+        steps:
+          - step:
+              type: Agent
+              name: Agent_1
+              identifier: Agent_1
+              spec:
+                agentName: aiCodeReviewAgent
+                agentSettings: {}
+  identifier: build_test
+  versionLabel: v1
