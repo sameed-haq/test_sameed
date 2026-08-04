@@ -23,5 +23,9 @@ template:
               spec:
                 agentName: aiCodeReviewAgent
                 agentSettings: {}
+          - insert:
+              name: placeholder step
+              identifier: placeholder_step
+              steps: <+input>
   identifier: build_test
   versionLabel: v1
