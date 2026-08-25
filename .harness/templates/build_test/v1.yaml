@@ -28,4 +28,3 @@ template:
               identifier: placeholder_step
               steps: <+input>
   identifier: build_test
-  versionLabel: v1
